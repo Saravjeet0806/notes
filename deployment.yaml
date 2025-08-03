@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: habitink-config
+data:
+
+  MONGO_URI: "your mongo uri"
+  UPSTASH_REDIS_REST_URL: "your redis rest url"
+  UPSTASH_REDIS_REST_TOKEN: "your redis rest token"
+
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: habitink-deployment
+  labels:
+    app: habitink
+spec:
+  replicas: 1 # You can scale this up for more pods
+  selector:
+    matchLabels:
+      app: habitink
+  template:
+    metadata:
+      labels:
+        app: habitink
+    spec:
+      containers:
+      - name: habitink
+        image: habitink-app:latest # Make sure this matches your image name and tag
+        imagePullPolicy: Never    # Use 'Never' to prevent Kubernetes from trying to pull from a remote registry
+        ports:
+        - containerPort: 5001
+        envFrom:
+        - configMapRef:
+            name: habitink-config
+        env:
+        - name: PORT
+          value: "5001"
+
+---
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: habitink-service
+spec:
+  type: NodePort
+  selector:
+    app: habitink
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5001
+      nodePort: 30000 # You can access the app at http://<your_node_ip>:30000
